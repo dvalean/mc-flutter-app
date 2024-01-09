@@ -79,7 +79,7 @@ class _GameAppState extends State<GameApp> {
                         ),
                       ),
                     ),
-                    ESenseControls()
+                    ESenseControls(brickBreaker: game)
                   ],
                 ),
               ),

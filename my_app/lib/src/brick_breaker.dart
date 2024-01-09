@@ -27,7 +27,7 @@ class BrickBreaker extends FlameGame
   final rand = math.Random();
   double get width => size.x;
   double get height => size.y;
-
+  static const duration = Duration(seconds: 1);
   late PlayState _playState;
   PlayState get playState => _playState;
   set playState(PlayState playState) {
@@ -60,11 +60,6 @@ class BrickBreaker extends FlameGame
     // Move existing bricks downward
     for (final brick in world.children.whereType<Brick>()) {
       brick.position.y += 500 * dt;
-
-      // Check if the brick reached the bottom of the screen
-      if (brick.position.y > 2220) {
-        brick.removeFromParent();
-      }
     }
   }
 
@@ -137,26 +132,48 @@ class BrickBreaker extends FlameGame
     startGame();
   }
 
-  @override
-  KeyEventResult onKeyEvent(
-      RawKeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    super.onKeyEvent(event, keysPressed);
-    switch (event.logicalKey) {
-      case LogicalKeyboardKey.arrowLeft:
-        world.children.query<Bat>().first.moveBy(-batStep);
-      case LogicalKeyboardKey.arrowRight:
-        world.children.query<Bat>().first.moveBy(batStep);
-      case LogicalKeyboardKey.space:
-        world.add(Ball(
-          difficultyModifier: difficultyModifier,
-          radius: ballRadius,
-          position: world.children.query<Bat>().first.position,
-        ));
-      case LogicalKeyboardKey.enter:
-        startGame();
+  void moveBatBasedOnAccelerometer(int accelerometerX) {
+    final bat = world.children.query<Bat>().first;
+    // Adjust the sensitivity based on your requirements
+    double sensitivity = 0.2;
+
+    if (accelerometerX > sensitivity) {
+      bat.moveBy(-batStep);
+    } else if (accelerometerX < -sensitivity) {
+      bat.moveBy(batStep);
     }
-    return KeyEventResult.handled;
   }
+
+  void handleButtonPress() {
+    Future.delayed(duration, () {
+      world.add(Ball(
+        difficultyModifier: difficultyModifier,
+        radius: ballRadius,
+        position: world.children.query<Bat>().first.position,
+      ));
+    });
+  }
+
+  // @override
+  // KeyEventResult onKeyEvent(
+  //     RawKeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+  //   super.onKeyEvent(event, keysPressed);
+  //   switch (event.logicalKey) {
+  //     case LogicalKeyboardKey.arrowLeft:
+  //       world.children.query<Bat>().first.moveBy(-batStep);
+  //     case LogicalKeyboardKey.arrowRight:
+  //       world.children.query<Bat>().first.moveBy(batStep);
+  //     case LogicalKeyboardKey.space:
+  //       world.add(Ball(
+  //         difficultyModifier: difficultyModifier,
+  //         radius: ballRadius,
+  //         position: world.children.query<Bat>().first.position,
+  //       ));
+  //     case LogicalKeyboardKey.enter:
+  //       startGame();
+  //   }
+  //   return KeyEventResult.handled;
+  // }
 
   @override
   Color backgroundColor() => const Color(0xff8091a2);

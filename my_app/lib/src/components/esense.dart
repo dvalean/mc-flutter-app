@@ -5,12 +5,17 @@ import 'package:esense_flutter/esense.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 
+import '../brick_breaker.dart';
+
 class ESenseControls extends StatefulWidget {
-  const ESenseControls({Key? key}) : super(key: key);
+  final BrickBreaker brickBreaker; // Add this line
+
+  const ESenseControls({required this.brickBreaker, Key? key}) : super(key: key);
 
   @override
   _ESenseControlsState createState() => _ESenseControlsState();
 }
+
 
 class _ESenseControlsState extends State<ESenseControls> {
   late final ESenseManager eSenseManager;
@@ -86,42 +91,47 @@ class _ESenseControlsState extends State<ESenseControls> {
   }
 
   void _listenToESenseEvents() async {
+  
     eSenseManager.sensorEvents.listen((event) {
-      print('ESENSE event: $event');
+      //print('ESENSE event: $event');
+        setState(() {
+          if (widget.brickBreaker.playState == PlayState.playing) {
+      
+        // Handle accelerometer data using SensorEvent
+        if (event is SensorEvent) {
+          _accelerometerX = event.accel![0]; // X-axis accelerometer value
+          //_checkTiltDirection();
+          _moveBatBasedOnAccelerometer();
+        }
+          }
+      });
+      
+    eSenseManager.eSenseEvents.listen((event) {
+      //print('ESENSE event: $event');
 
       setState(() {
         switch (event.runtimeType) {
-          case DeviceNameRead:
-            _deviceName = (event as DeviceNameRead).deviceName ?? 'Unknown';
-            break;
-          case BatteryRead:
-            _voltage = (event as BatteryRead).voltage ?? -1;
-            break;
           case ButtonEventChanged:
             _button = (event as ButtonEventChanged).pressed
                 ? 'pressed'
                 : 'not pressed';
-            break;
-          case AccelerometerOffsetRead:
-            // TODO
-            break;
-          case AdvertisementAndConnectionIntervalRead:
-            // TODO
-            break;
-          case SensorConfigRead:
-            // TODO
+            _handleButtonEvent();
             break;
         }
-
-        // Handle accelerometer data using SensorEvent
-        if (event is SensorEvent) {
-          _accelerometerX = event.accel![0]; // X-axis accelerometer value
-          _checkTiltDirection();
-        }
-        });
+      });
+      
     });
+    });
+  }
 
-    _getESenseProperties();
+  void _handleButtonEvent() {
+    if (_button == 'pressed') {
+      if (widget.brickBreaker.playState != PlayState.playing) {
+        _startGameFromESense();
+      } else {
+        widget.brickBreaker.handleButtonPress();
+      }
+    }
   }
 
   void _getESenseProperties() async {
@@ -168,7 +178,7 @@ class _ESenseControlsState extends State<ESenseControls> {
   void _startListenToSensorEvents() async {
     // // any changes to the sampling frequency must be done BEFORE listening to sensor events
     // print('setting sampling frequency...');
-    // await eSenseManager.setSamplingRate(100);
+    await eSenseManager.setSamplingRate(100);
 
     // subscribe to sensor event from the eSense device
     subscription = eSenseManager.sensorEvents.listen((event) {
@@ -199,28 +209,21 @@ class _ESenseControlsState extends State<ESenseControls> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('eSense Device Status: \t$_deviceStatus'),
-        Text('eSense Device Name: \t$_deviceName'),
-        Text('eSense Battery Level: \t$_voltage'),
-        Text('eSense Button Event: \t$_button'),
         Text('Connected: $connected'),
         ElevatedButton(
           onPressed: () => _connectToESense(),
           child: Text('Connect to eSense'),
         ),
-        FloatingActionButton(
-          onPressed: (!connected)
-              ? null
-              : (!sampling)
-                  ? _startListenToSensorEvents
-                  : _pauseListenToSensorEvents,
-          tooltip: 'Listen to eSense sensors',
-          child: (!sampling)
-              ? const Icon(Icons.play_arrow)
-              : const Icon(Icons.pause),
-        ),
         // Other UI elements related to eSense controls...
       ],
     );
+  }
+
+  void _startGameFromESense() {
+    widget.brickBreaker.onTap();
+  }
+
+  void _moveBatBasedOnAccelerometer() {
+    widget.brickBreaker.moveBatBasedOnAccelerometer(_accelerometerX);
   }
 }

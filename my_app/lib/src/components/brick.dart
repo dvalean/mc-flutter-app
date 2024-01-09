@@ -21,24 +21,34 @@ class Brick extends CircleComponent
               ..color = Color(0xFF343541)
               ..style = PaintingStyle.fill,
             children: [CircleHitbox()]);
+  bool touch = false;
 
   @override
   void onCollisionStart(
       Set<Vector2> intersectionPoints, PositionComponent other) {
-    super.onCollisionStart(intersectionPoints, other);                                      // Add this line
+    super.onCollisionStart(intersectionPoints, other);  
+    
+    print(other);                                  // Add this line
 
+    if (!touch) {
     if (other is Brick) {
       removeFromParent();
+      touch = true;
     } else if (other is Bat) {
       removeFromParent();
       game.playState = PlayState.gameOver;
+      touch = true;
     } else if (other is Ball) {
       removeFromParent();
-      game.score.value++;   
+      print("SCORED POINTS");
+      game.score.value++;  
+      touch = true; 
     } else if (other is PlayArea) {
       print("PLAY AREA TOUCHED NOT EXPECTED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
       removeFromParent();
       game.playState = PlayState.gameOver;
+      touch = true;
+    }
     }
   }
 }
